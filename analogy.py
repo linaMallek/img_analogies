@@ -1,5 +1,3 @@
-
-
 import numpy as np
 import cv2
 from sklearn.feature_extraction.image import extract_patches_2d as extract
@@ -12,7 +10,7 @@ into envs>python>Lib>site-packages>pyflann>win32. If you have difficulties just 
 to pyflann.  
 """
 
-
+# on devise sur 255 pour normalisee ce qui facilite les calcules
 def read_images(apath, appath, bpath):
     imgA = cv2.imread(apath, cv2.IMREAD_UNCHANGED)/255.0
     imgAp = cv2.imread(appath, cv2.IMREAD_UNCHANGED)/255.0
@@ -31,7 +29,7 @@ def add_pairs(imgA, imgAp, path1, path2):
 
     return matA, matAp
 
-
+#section 
 def remap_y(imgA,imgB):
     meanA = np.mean(imgA)
     sdA = np.std(imgA)
@@ -44,9 +42,9 @@ def remap_y(imgA,imgB):
 
 
 def rgb2yiq(image, remap=False, remap_target=None, feature='y'):
-    yiq_xform = np.array([[0.299, 0.587, 0.114],
-                          [0.596, -0.275, -0.321],
-                         [0.212, -0.523, 0.311]])
+    yiq_xform = np.array([[0.299, 0.587, 0.114], #ROUGE
+                          [0.596, -0.275, -0.321], #Vert 
+                         [0.212, -0.523, 0.311]]) #bleu
     yiq = np.dot(image, yiq_xform.T.copy())
 
     if remap:
@@ -70,7 +68,7 @@ def get_pyramid(image, levels):
     img = image.copy()
     pyr = [img]
     for i in range(levels):
-        img = cv2.pyrDown(img)
+        img = cv2.pyrDown(img) #downsampling
         pyr.append(img)
 
     return pyr
@@ -79,11 +77,15 @@ def get_pyramid(image, levels):
 def get_features(img, causal=False):
 
     #create 5x5 neighborhood for L, pad so that feature list is correct dimensions
+    #Cette ligne crée une copie de l'image img avec un bord de 2 pixels en haut, en bas, à gauche et à droite.
+    #  Cela permet de s'assurer que les fenêtres de voisinage de 5x5 pixels peuvent être correctement extraites
+    #  autour de chaque pixel de l'image sans déborder des bords de l'image.
     patches = cv2.copyMakeBorder(img,2,2,2,2,cv2.BORDER_DEFAULT)
+    #pour chaque pixel on extrait des voisinge de 5*5
     patches = extract(patches, (5, 5))
     if causal:
         features = np.zeros((img.shape[0],img.shape[1],12))
-    else:
+    else: # extriare 25 caracteristique 
         features = np.zeros((img.shape[0],img.shape[1],25))
 
     height, width = img.shape  # dimensions of the current level of the gaussian pyramid
@@ -97,6 +99,8 @@ def get_features(img, causal=False):
 def make_analogy(lvl, Nlvl, A_L, Ap_L, B_L, Bp_L, s_L, kappa=0, method='pyflann'):
     A_f = get_features(A_L[lvl])
     Ap_f = get_features(Ap_L[lvl][:,:,0], causal=True)
+    
+    # matrice de caracteristique
     A_f = np.concatenate((A_f, Ap_f), 2)
 
     # initialize additional feature sets and B mats
@@ -184,7 +188,8 @@ def make_analogy(lvl, Nlvl, A_L, Ap_L, B_L, Bp_L, s_L, kappa=0, method='pyflann'
 
             Bp_L[lvl][bx,by,0] = Ap_L[lvl][m,n,0]
             # save s
-            s_L[lvl][bx, by, :] = [m,n]
+            s_L[lvl][bx, by, 0] = m
+            s_L[lvl][bx, by, 1] = n
 
     print("coherent pixel chosen", coh_chosen, "times.")
 
@@ -287,9 +292,14 @@ def make_analogy_color(lvl, Nlvl, A_L, Ap_L, B_L, Bp_L, s_L, kappa=0, method='py
             Bp_L[lvl][bx,by,:] = Ap_L[lvl][m,n,:]  # move value into Bprime
 
             # save s
-            s_L[lvl][bx, by, :] = [m,n]
 
-    print("Coherent pixel chosen", coh_chosen, "/", Bp_L[lvl].size, "times.")
+            #s_L = np.zeros((B_border.shape[0]-4, B_border.shape[1]-4, 2), dtype=int)
+
+
+            s_L[lvl][bx, by, 0] = m
+            s_L[lvl][bx, by, 1] = n
+
+   # print("Coherent pixel chosen", coh_chosen, "/", Bp_L[lvl].size, "times.")
 
     return Bp_L[lvl]
 

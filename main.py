@@ -20,24 +20,25 @@ type : two types are implemented. The default is luminance since the paper predo
 
 
 """  Start User Defined Inputs  """
-remap_A = 1
+remap_A = 1 # est ce que on normalise la luminance ou pas 
 pyr_levels = 5
 kappa = 0
 # method can be pyflann_kmeans, pyflann_kdtree or sk_nn, default:pyflann_kmeans
 search_method = 'pyflann_kdtree'
 # type can be luminance or color, most effects work with luminance. Texture synthesis works well with color
 # default:luminance
-type = 'color'
+type = 'luminance'
 additional_pairs = False
 # type the path of your images here. You can change the output path at the bottom
 imgA, imgAp, imgB = analogy.read_images("src/A.jpg", "src/Ap.jpg", "src/B.jpg")
+
 if additional_pairs:  # add/remove a line for each pair you want to cat to A and Ap for training on a single loop
     imgA, imgAp = analogy.add_pairs(imgA, imgAp, "src/A2.jpg", "src/Ap2.jpg")
     imgA, imgAp = analogy.add_pairs(imgA, imgAp, "src/A3.jpg", "src/Ap3.jpg")
 """  End User Defined Inputs  """
 
 # initialize pyramids (denoted by _L)
-if type == 'luminance':
+if type == 'luminance': #deja la on a plusieurs img level 
     A_L = analogy.get_pyramid(analogy.rgb2yiq(imgA), pyr_levels)
     B_L = analogy.get_pyramid(analogy.rgb2yiq(imgB, feature='yiq'), pyr_levels)
     Ap_L = analogy.get_pyramid(analogy.rgb2yiq(imgAp, feature='yiq'), pyr_levels)
@@ -46,11 +47,20 @@ elif type == 'color':
     B_L = analogy.get_pyramid(imgB, pyr_levels)
     Ap_L = analogy.get_pyramid(imgAp, pyr_levels)
 
+
+
 Bp_L = []
 s = []
-for i in range(len(B_L)):
+# this loop initializes Bp_L with empty arrays and s with arrays
+#  filled with -1 for each level of the image pyramid. These arrays
+#  will later be populated with 
+# values as the algorithm progresses through the pyramid levels.
+
+for i in range(len(B_L)): #each level of the pyramide 
     Bp_L.append(np.zeros(B_L[i].shape))
     s.append(np.zeros((B_L[i].shape[0],B_L[i].shape[1],2))-1)
+
+print(Bp_L)
 
 # process pyramid from coursest to finest
 for lvl in range(pyr_levels, -1, -1):
@@ -76,3 +86,7 @@ for lvl in range(pyr_levels, -1, -1):
 
     write_name = 'out/Bp_PyrLvl-'+str(lvl)+'.jpg'
     cv2.imwrite(write_name, imgBp)
+cv2.imwrite("src/Bp.jpg", imgBp)
+
+
+
