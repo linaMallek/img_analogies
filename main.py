@@ -1,6 +1,7 @@
 import numpy as np
 import cv2
 import analogy
+import time
 
 """
 Frame work for looping through make_analogy
@@ -30,12 +31,14 @@ search_method = 'pyflann_kdtree'
 type = 'luminance'
 additional_pairs = False
 # type the path of your images here. You can change the output path at the bottom
-imgA, imgAp, imgB = analogy.read_images("src/A.jpg", "src/Ap.jpg", "src/B.jpg")
+imgA, imgAp, imgB = analogy.read_images("src/A1.jpg", "src/Ap1.jpg", "src/B1.jpg")
 
 if additional_pairs:  # add/remove a line for each pair you want to cat to A and Ap for training on a single loop
     imgA, imgAp = analogy.add_pairs(imgA, imgAp, "src/A2.jpg", "src/Ap2.jpg")
     imgA, imgAp = analogy.add_pairs(imgA, imgAp, "src/A3.jpg", "src/Ap3.jpg")
 """  End User Defined Inputs  """
+
+start_time = time.time()
 
 # initialize pyramids (denoted by _L)
 if type == 'luminance': #deja la on a plusieurs img level 
@@ -83,9 +86,14 @@ for lvl in range(pyr_levels, -1, -1):
     imgBp = imgBp * 255.0
     imgBp[imgBp > 255] = 255
     imgBp[imgBp < 0] = 0
+end_time = time.time()
 
-    write_name = 'out/Bp_PyrLvl-'+str(lvl)+'.jpg'
-    cv2.imwrite(write_name, imgBp)
+# Calculate the elapsed time
+elapsed_time = end_time - start_time
+print(f"Execution time: {elapsed_time} seconds")
+
+    # write_name = 'out/Bp_PyrLvl-'+str(lvl)+'.jpg'
+    # cv2.imwrite(write_name, imgBp)
 cv2.imwrite("src/Bp.jpg", imgBp)
 
 

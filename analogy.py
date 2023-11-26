@@ -154,18 +154,22 @@ def make_analogy(lvl, Nlvl, A_L, Ap_L, B_L, Bp_L, s_L, kappa=0, method='pyflann'
     coh_chosen = 0
 
     for x in range(2, B_border.shape[0]-2):
+        #à chaque 25e rangée, le code affiche un message indiquant la rangée en cours de traitemen
         if x%25 == 0:
             print("Rastering row", x, "of", B_border.shape[0]-4)
 
         for y in range(2, B_border.shape[1]-2):
             # this is where you really are in B
             bx, by = x-2, y-2
-
+            
+            # extraire les pixels voisin  pour 1 pixel 
+            # ici cest celle normal
             B_patch = B_border[x-2:x+3,y-2:y+3,0].flatten()
             Bp_causal = Bp_border[x-2:x+1,y-2:y+3,0].flatten()[0:12]
             B_f = np.concatenate((B_patch, Bp_causal))
 
             if lvl < Nlvl:  # get same set features as A_F
+                #ici cest celle du level +1
                 B1_patch = B1_border[x-2:x+3,y-2:y+3,0].flatten()
                 Bp1_patch = Bp1_border[x-2:x+3,y-2:y+3,0].flatten()
                 B_f = np.concatenate((B_f, B1_patch, Bp1_patch),0)
@@ -174,7 +178,10 @@ def make_analogy(lvl, Nlvl, A_L, Ap_L, B_L, Bp_L, s_L, kappa=0, method='pyflann'
                 distance, neighbor = sknn.kneighbors(B_f[None, :])
                 neighbor = int(neighbor[0])
             else:
+                #neighbor indice du pixel le plus similaire
+                # distance entre A et B avec L2 
                 neighbor, distance = flann.nn_index(B_f, 1, checks=flann_p['checks'])
+            
             distance = distance**2
             # get p. turn number in neighbor to coordinate in A_f
             m,n = np.unravel_index(neighbor, (A_f.shape[0], A_f.shape[1]))
@@ -185,7 +192,8 @@ def make_analogy(lvl, Nlvl, A_L, Ap_L, B_L, Bp_L, s_L, kappa=0, method='pyflann'
                 if coh_distance <= distance*coh_fact:
                     m,n = coh_neighbor
                     coh_chosen += 1
-
+            
+            # main instruction 
             Bp_L[lvl][bx,by,0] = Ap_L[lvl][m,n,0]
             # save s
             s_L[lvl][bx, by, 0] = m
@@ -307,8 +315,11 @@ def make_analogy_color(lvl, Nlvl, A_L, Ap_L, B_L, Bp_L, s_L, kappa=0, method='py
 def get_coherent(A_f,B_f,x,y,s):  # tuned for 5x5 patches only
     min_distance = np.inf
     cohxy = [-1, -1]
+    # parcourir les voisins 
     for i in range(-2, 3, 1):
         for j in range(-2, 3, 1):
+
+            # ici c'est le pixel lui meme on l'ignore 
             if i == 0 and j == 0:  # only do causal portion
                 break
             if x+i >= s.shape[0] or y+j >= s.shape[1]:
